@@ -41,7 +41,7 @@ license = "MIT"
 name = "ccvfi"
 readme = "README.md"
 repository = "https://github.com/EutropicAI/ccvfi"
-version = "0.0.2"
+version = "0.0.3"
 
 # Requirements
 [tool.poetry.dependencies]
