@@ -33,6 +33,7 @@ class AutoModel:
         """
 
         # Check if pretrained_model_name is a path to a custom model
+        print("Automodel!!!")
         if AutoModel._is_custom_model_path(pretrained_model_name):
             config = AutoModel._create_custom_rife_config(pretrained_model_name)
         else:
