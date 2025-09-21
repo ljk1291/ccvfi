@@ -33,10 +33,17 @@ class AutoModel:
         """
 
         # Check if pretrained_model_name is a path to a custom model
-        print("Automodel!!!")
-        if AutoModel._is_custom_model_path(pretrained_model_name):
+        print(f"🔍 AutoModel.from_pretrained called with: {pretrained_model_name}")
+        print(f"🔍 Type: {type(pretrained_model_name)}")
+        
+        is_custom_path = AutoModel._is_custom_model_path(pretrained_model_name)
+        print(f"🔍 _is_custom_model_path returned: {is_custom_path}")
+        
+        if is_custom_path:
+            print(f"✅ Detected as custom path, creating custom config...")
             config = AutoModel._create_custom_rife_config(pretrained_model_name)
         else:
+            print(f"❌ Not detected as custom path, looking in CONFIG_REGISTRY...")
             config = CONFIG_REGISTRY.get(pretrained_model_name)
         
         return AutoModel.from_config(
@@ -119,14 +126,25 @@ class AutoModel:
         :param pretrained_model_name: The model name or path to check
         :return: True if it's a custom model path, False otherwise
         """
+        print(f"🔍 _is_custom_model_path: checking {pretrained_model_name}")
+        
         if isinstance(pretrained_model_name, ConfigType):
+            print(f"🔍 Is ConfigType, returning False")
             return False
         
         # Check if it's a path to a .pkl file
         path = Path(pretrained_model_name)
-        return (path.exists() and 
-                path.is_file() and 
-                path.suffix.lower() == '.pkl')
+        print(f"🔍 Path object: {path}")
+        print(f"🔍 path.exists(): {path.exists()}")
+        print(f"🔍 path.is_file(): {path.is_file()}")
+        print(f"🔍 path.suffix: {path.suffix}")
+        print(f"🔍 path.suffix.lower(): {path.suffix.lower()}")
+        
+        result = (path.exists() and 
+                  path.is_file() and 
+                  path.suffix.lower() == '.pkl')
+        print(f"🔍 Final result: {result}")
+        return result
 
     @staticmethod
     def _create_custom_rife_config(model_path: str) -> BaseConfig:
