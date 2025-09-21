@@ -1,10 +1,11 @@
 from typing import Any, Optional, Union
+from pathlib import Path
 
 import torch
 
 from ccvfi.config import CONFIG_REGISTRY
 from ccvfi.model import MODEL_REGISTRY
-from ccvfi.type import BaseConfig, ConfigType
+from ccvfi.type import BaseConfig, ConfigType, ArchType, ModelType
 
 
 class AutoModel:
@@ -19,9 +20,9 @@ class AutoModel:
         gh_proxy: Optional[str] = None,
     ) -> Any:
         """
-        Get a model instance from a pretrained model name.
+        Get a model instance from a pretrained model name or custom model path.
 
-        :param pretrained_model_name: The name of the pretrained model. It should be registered in CONFIG_REGISTRY.
+        :param pretrained_model_name: The name of the pretrained model (registered in CONFIG_REGISTRY) or direct path to a .pkl model file.
         :param device: inference device
         :param fp16: use fp16 precision or not
         :param compile: use torch.compile or not
@@ -31,7 +32,12 @@ class AutoModel:
         :return:
         """
 
-        config = CONFIG_REGISTRY.get(pretrained_model_name)
+        # Check if pretrained_model_name is a path to a custom model
+        if AutoModel._is_custom_model_path(pretrained_model_name):
+            config = AutoModel._create_custom_rife_config(pretrained_model_name)
+        else:
+            config = CONFIG_REGISTRY.get(pretrained_model_name)
+        
         return AutoModel.from_config(
             config=config,
             device=device,
@@ -103,3 +109,51 @@ class AutoModel:
         if name is None:
             name = obj.__name__
         MODEL_REGISTRY.register(obj=obj, name=name)
+
+    @staticmethod
+    def _is_custom_model_path(pretrained_model_name: Union[ConfigType, str]) -> bool:
+        """
+        Check if the pretrained_model_name is a direct path to a .pkl model file.
+
+        :param pretrained_model_name: The model name or path to check
+        :return: True if it's a custom model path, False otherwise
+        """
+        if isinstance(pretrained_model_name, ConfigType):
+            return False
+        
+        # Check if it's a path to a .pkl file
+        path = Path(pretrained_model_name)
+        return (path.exists() and 
+                path.is_file() and 
+                path.suffix.lower() == '.pkl')
+
+    @staticmethod
+    def _create_custom_rife_config(model_path: str) -> BaseConfig:
+        """
+        Create a custom RIFE config for a .pkl model file.
+
+        :param model_path: Direct path to the .pkl model file
+        :return: A BaseConfig instance for the custom model
+        """
+        path = Path(model_path)
+        
+        if not path.exists():
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+        
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {model_path}")
+        
+        if path.suffix.lower() != '.pkl':
+            raise ValueError(f"File must have .pkl extension: {model_path}")
+        
+        # Create a custom config for RIFE model
+        # Use the filename (without extension) as part of the config name
+        config = BaseConfig(
+            name=f"custom_rife_{path.stem}",
+            path=str(path.absolute()),
+            arch=ArchType.IFNET,
+            model=ModelType.RIFE,
+            in_frame_count=2  # Default for RIFE models
+        )
+        
+        return config
